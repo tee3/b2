@@ -809,6 +809,12 @@ class property-map
         }
         local best = [ sequence.select-highest-ranked $(matches)
             : $(match-ranks) ] ;
+	# HACK: work around potential bug in Windows Boost.Jam or Boost.Build
+        if $(best[2]) && ($(best[1]) != $(best[2]))
+	{
+	    best = $(best[1]) ;
+	}
+
         if $(best[2])
         {
             import errors : error : errors.error ;
