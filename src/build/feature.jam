@@ -213,10 +213,7 @@ rule defaults ( features * )
 #
 rule valid ( names + )
 {
-    if $(names) in $(.all-features)
-    {
-        return true ;
-    }
+    return $(names) in $(.all-features) ;
 }
 
 
