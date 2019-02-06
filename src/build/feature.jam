@@ -318,7 +318,7 @@ rule implied-subfeature (
 #
 local rule validate-feature ( feature )
 {
-    if ! $(feature) in $(.all-features)
+    if ! [ valid $(feature) ]
     {
         import errors ;
         errors.error unknown feature \"$(feature)\" ;
