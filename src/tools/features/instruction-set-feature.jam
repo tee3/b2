@@ -100,6 +100,94 @@ for s in $(arm-instruction-sets)
 
 arm-instruction-sets += $(arm-instruction-set-extensions) ;
 
+local arm-processors =
+    0strongarm1110
+    ares
+    arm1020e
+    arm1020t
+    arm1022e
+    arm1026ej-s
+    arm10e
+    arm10tdmi
+    arm1136j-s
+    arm1136jf-s
+    arm1156t2-s
+    arm1156t2f-s
+    arm1176jz-s
+    arm1176jzf-s
+    arm710t
+    arm720t
+    arm740t
+    arm7tdmi
+    arm7tdmi-s
+    arm8
+    arm810
+    arm9
+    arm920
+    arm920t
+    arm922t
+    arm926ej-s
+    arm940t
+    arm946e-s
+    arm966e-s
+    arm968e-s
+    arm9e
+    arm9tdmi
+    cortex-a12
+    cortex-a15
+    cortex-a17
+    cortex-a32
+    cortex-a35
+    cortex-a5
+    cortex-a53
+    cortex-a55
+    cortex-a57
+    cortex-a7
+    cortex-a72
+    cortex-a73
+    cortex-a75
+    cortex-a76
+    cortex-a8
+    cortex-a9
+    cortex-m0
+    cortex-m0.small-multiply
+    cortex-m0plus
+    cortex-m0plus.small-multiply
+    cortex-m1
+    cortex-m1.small-multiply
+    cortex-m23
+    cortex-m3
+    cortex-m33
+    cortex-m4
+    cortex-m7
+    cortex-r4
+    cortex-r4f
+    cortex-r5
+    cortex-r52
+    cortex-r7
+    cortex-r8
+    ep9312
+    exynos-m1
+    fa526
+    fa606te
+    fa626
+    fa626te
+    fa726te
+    fmp626
+    generic-armv7-a
+    iwmmxt
+    iwmmxt2
+    marvell-pj4
+    mpcore
+    mpcorenovfp
+    neoverse-n1
+    strongarm
+    strongarm110
+    strongarm1100
+    xgene1
+    xscale
+  ;
+
 feature.feature instruction-set
     :
         # x86 and x86-64
@@ -142,6 +230,7 @@ feature.feature instruction-set
 
         # Advanced RISC Machines
         $(arm-instruction-sets)
+        $(arm-processors)
 
         cortex-a9+vfpv3 cortex-a53 cortex-r5 cortex-r5+vfpv3-d16
 
