@@ -28,18 +28,34 @@ local arm-instruction-sets =
     armv4
     armv4t
     armv5
+    armv5e
     armv5t
     armv5te
     armv6
     armv6j
-    iwmmxt
-    ep9312
+    armv6k
+    armv6kz
+    armv6t2
+    armv6z
+    armv6zk
     armv7
     armv7-a
     armv7ve
+    armv8-a
+    armv8.1-a
+    armv8.2-a
+    armv8.3-a
+    armv8.4-a
     armv7-r
+    armv8-r
+    armv6-m
+    armv6s-m
     armv7-m
     armv7e-m
+    armv8-m.base
+    armv8-m.main
+    iwmmxt
+    iwmmxt2
     ;
 
 feature.feature instruction-set
