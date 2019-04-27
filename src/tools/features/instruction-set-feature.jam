@@ -20,6 +20,28 @@ the section <<C++ Compilers>> for details.
 
 |# # end::doc[]
 
+local arm-instruction-sets =
+    armv2
+    armv2a
+    armv3
+    armv3m
+    armv4
+    armv4t
+    armv5
+    armv5t
+    armv5te
+    armv6
+    armv6j
+    iwmmxt
+    ep9312
+    armv7
+    armv7-a
+    armv7ve
+    armv7-r
+    armv7-m
+    armv7e-m
+    ;
+
 feature.feature instruction-set
     :
         # x86 and x86-64
@@ -61,8 +83,7 @@ feature.feature instruction-set
         700 7100 7100lc 7200 7300 8000
 
         # Advanced RISC Machines
-        armv2 armv2a armv3 armv3m armv4 armv4t armv5 armv5t armv5te armv6 armv6j iwmmxt ep9312
-        armv7 armv7s
+        $(arm-instruction-sets)
 
         cortex-a9+vfpv3 cortex-a53 cortex-r5 cortex-r5+vfpv3-d16
 
