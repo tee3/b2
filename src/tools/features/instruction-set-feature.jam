@@ -57,6 +57,48 @@ local arm-instruction-sets =
     iwmmxt
     iwmmxt2
     ;
+local arm-instruction-set-extension-armv6zk =
+    fp
+    nofp
+    ;
+local arm-instruction-set-extension-armv7 =
+    fp
+    nofp
+    ;
+local arm-instruction-set-extension-armv7-a =
+    mp
+    sec
+    fp
+    simd
+    vfpv3
+    vfpv3-d16-fp16
+    vfpv3-fp16
+    vfpv4-d16
+    vfpv4
+    neon-fp16
+    neon-vfpv4
+    nosimd
+    nofp
+    ;
+# @todo add more extensions for more instruction-set
+
+local arm-instruction-set-extensions ;
+for s in $(arm-instruction-sets)
+{
+  if $(arm-instruction-set-extension-$(s))
+  {
+    local b = $(s) ;
+    for t in $(arm-instruction-set-extension-$(s))
+    {
+      # @todo should be creating every combination of the extensions
+      b += "+$(t)" ;
+
+      arm-instruction-set-extensions += $(b) ;
+    }
+  }
+}
+
+arm-instruction-sets += $(arm-instruction-set-extensions) ;
 
 feature.feature instruction-set
     :
