@@ -1,0 +1,32 @@
+# Copyright 2022 Thomas Brown
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE.txt or copy at
+# https://www.bfgroup.xyz/b2/LICENSE.txt)
+
+import feature ;
+
+#| tag::doc[]
+
+[[bbv2.builtin.features.floating-point-abi]]`floating-point-abi`::
+* Allowed values*: `soft`, `softfp`, `hard`.
+
+Specifies the floating-point ABI to build with.
+
+NOTE: This is an `optional` feature. Hence when not specified the compiler
+default behaviour is used.
+
+NOTE: Please consult the toolset specific documentation for which `floating-point-abi`
+is supported.
+
+|# # end::doc[]
+
+feature.feature floating-point-abi
+  :
+    soft
+    softfp
+    hard
+  :
+    optional
+    propagated
+    link-incompatible
+  ;
