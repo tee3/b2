@@ -44,7 +44,7 @@ test_true ()
 # if there was an error.
 echo_run ()
 {
-    if test_true "${B2_VERBOSE_OPT}" ; then echo "> $@" ; fi
+    if test_true "${B2_VERBOSE_OPT}" ; then printf "> %s\n" "$@" ; fi
     "$@"
     r=$?
     if test "${r}" -ne "${TRUE}" ; then
@@ -112,8 +112,8 @@ test_compiler ()
     shift
     CMD="${EXE} $@ ${B2_CXXFLAGS_OPT:-}"
     SETUP="${B2_SETUP:-true}"
-    if test_true "${B2_VERBOSE_OPT}" ; then
-        echo "> ${CMD} check_cxx11.cpp"
+    if test_true ${B2_VERBOSE_OPT} ; then
+        printf "> %s check_cxx11.cpp" "${CMD}"
         ( ${SETUP} ; ${CMD} check_clib.cpp check_cxx11.cpp )
     else
         ( ${SETUP} ; ${CMD} check_clib.cpp check_cxx11.cpp ) 1>/dev/null 2>/dev/null
@@ -297,7 +297,7 @@ TOOLSET_CHECK=$?
 # We can bail from the rest of the checks and build if we are just guessing
 # the toolset.
 if test_true "${B2_GUESS_TOOLSET_OPT}" ; then
-    echo "${B2_TOOLSET}"
+    printf "%s\n" "${B2_TOOLSET}"
     exit 0
 fi
 

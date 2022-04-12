@@ -11,11 +11,11 @@ set -e
 set -u
 
 # Build b2
-echo "Building the B2 engine.."
+printf "Building the B2 engine..\n"
 pwd="$(pwd)"
 if ! "${pwd}"/src/engine/build.sh "$@" ; then
-    echo
-    echo "Failed to build the B2 engine." 1>&2
+    printf "\n" 1>&2
+    printf "Failed to build the B2 engine.\n" 1>&2
     exit 1
 fi
 cd "${pwd}"
