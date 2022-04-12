@@ -91,7 +91,7 @@ Options:
 # Check that a command is in the PATH.
 test_path ()
 {
-    if `command -v command 1>/dev/null 2>/dev/null`; then
+    if $(command -v command 1>/dev/null 2>/dev/null); then
         command -v $1 1>/dev/null 2>/dev/null
     else
         hash $1 1>/dev/null 2>/dev/null
@@ -102,7 +102,7 @@ test_path ()
 test_uname ()
 {
     if test_path uname; then
-        test `uname` = $*
+        test $(uname) = $*
     fi
 }
 
@@ -264,8 +264,8 @@ do
         --debug) B2_DEBUG_OPT=${TRUE} ;;
         --guess-toolset) B2_GUESS_TOOLSET_OPT=${TRUE} ;;
         --help) B2_HELP_OPT=${TRUE} ;;
-        --cxx=*) B2_CXX_OPT=`expr "x$1" : "x--cxx=\(.*\)"` ;;
-        --cxxflags=*) B2_CXXFLAGS_OPT=`expr "x$1" : "x--cxxflags=\(.*\)"` ;;
+        --cxx=*) B2_CXX_OPT=$(expr "x$1" : "x--cxx=\(.*\)") ;;
+        --cxxflags=*) B2_CXXFLAGS_OPT=$(expr "x$1" : "x--cxxflags=\(.*\)") ;;
         -*) ;;
         ?*) B2_TOOLSET=$1 ;;
     esac

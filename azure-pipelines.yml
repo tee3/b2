@@ -282,7 +282,7 @@ stages:
         git clone --recursive https://github.com/boostorg/boost.git
         cd boost
         git checkout ${BOOST_BRANCH}
-        CXX_PATH=`which ${CXX}`
+        CXX_PATH=$(which ${CXX})
         echo "using ${TOOLSET} : : ${CXX_PATH} ;" > ${HOME}/user-config.jam
         "${BUILD_SOURCESDIRECTORY}/src/engine/b2" --debug-configuration --build-type=complete --layout=versioned -n -d1 toolset=${TOOLSET} install
         popd
@@ -315,7 +315,7 @@ stages:
         git clone --recursive https://github.com/boostorg/boost.git
         cd boost
         git checkout ${BOOST_BRANCH}
-        CXX_PATH=`which ${CXX}`
+        CXX_PATH=$(which ${CXX})
         echo "using ${TOOLSET} : : ${CXX_PATH} ;" > ${HOME}/user-config.jam
         "${BUILD_SOURCESDIRECTORY}/src/engine/b2" --debug-configuration --build-type=complete --layout=versioned -n -d1 toolset=${TOOLSET} install
         popd
@@ -391,7 +391,7 @@ stages:
         pushd ${HOME}
         git clone -b boost-${BOOST_VERSION} --single-branch --recurse-submodules https://github.com/boostorg/boost.git boost_${BOOST_VERSION_U}
         cd boost_${BOOST_VERSION_U}
-        CXX_PATH=`which ${CXX}`
+        CXX_PATH=$(which ${CXX})
         echo "using ${TOOLSET} : : ${CXX_PATH} ;" > ${HOME}/user-config.jam
         "${BUILD_SOURCESDIRECTORY}/src/engine/b2" --debug-configuration --build-type=complete --layout=versioned -n -d1 toolset=${TOOLSET} install
         popd
@@ -435,7 +435,7 @@ stages:
         pushd ${HOME}
         git clone -b boost-${BOOST_VERSION} --single-branch --recurse-submodules https://github.com/boostorg/boost.git boost_${BOOST_VERSION_U}
         cd boost_${BOOST_VERSION_U}
-        CXX_PATH=`which ${CXX}`
+        CXX_PATH=$(which ${CXX})
         echo "using ${TOOLSET} : : ${CXX_PATH} ;" > ${HOME}/user-config.jam
         "${BUILD_SOURCESDIRECTORY}/src/engine/b2" --debug-configuration --build-type=complete --layout=versioned -n -d1 toolset=${TOOLSET} install
         popd
