@@ -1273,6 +1273,10 @@ cpu-flags gcc OPTIONS : arm : cortex-r5+vfpv3-d16 : -mcpu=cortex-r5 -mfpu=vfpv3-
 # AIX variant of RS/6000 & PowerPC
 toolset.flags gcc AROPTIONS <address-model>64/<target-os>aix : "-X64" ;
 
+# ABI
+toolset.flags gcc OPTIONS <abi>ms : -mabi=ms ;
+toolset.flags gcc OPTIONS <abi>sysv : -mabi=sysv ;
+
 # Enable response file control
 toolset.flags gcc RESPONSE_FILE_SUB <response-file>auto : a ;
 toolset.flags gcc RESPONSE_FILE_SUB <response-file>file : f ;
