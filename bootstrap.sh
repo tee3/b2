@@ -12,7 +12,7 @@ echo "Building the B2 engine.."
 pwd=`pwd`
 "${pwd}/src/engine/build.sh" "$@"
 if [ $? -ne 0 ]; then
-    echo
+    echo 1>&2
     echo "Failed to build the B2 engine." 1>&2
     exit 1
 fi
