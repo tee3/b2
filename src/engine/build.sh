@@ -55,7 +55,7 @@ echo_run ()
 # Print an error message, and exit with a status of 1.
 error_exit ()
 {
-    echo "
+cat << EOF
 ${@}
 
 You can specify the toolset as the argument, i.e.:
@@ -84,7 +84,7 @@ Options:
     --cxxflags=CXXFLAGS     The compiler flags to use in addition to the
                             flags for the detected compiler.
 
-" 1>&2
+EOF 1>&2
     exit 1
 }
 
@@ -303,10 +303,10 @@ fi
 
 # We need a viable compiler. Check here and give some feedback about it.
 if ! test_true "${TOOLSET_CHECK}" ; then
-    echo "
+    cat << EOF
 A C++11 capable compiler is required for building the B2 engine.
 Toolset '${B2_TOOLSET}' does not appear to support C++11.
-"
+EOF
     (B2_VERBOSE_OPT="${TRUE}" check_toolset)
     error_exit "
 ** Note, the C++11 capable compiler is _only_ required for building the B2
@@ -419,7 +419,7 @@ esac
 
 build_b2 ()
 {
-    echo "
+cat << EOF
 ###
 ###
 ### Using '${B2_TOOLSET}' toolset.
@@ -432,7 +432,7 @@ build_b2 ()
 echo "
 ###
 ###
-"
+EOF
     B2_SOURCES="\
 builtins.cpp \
 class.cpp \
