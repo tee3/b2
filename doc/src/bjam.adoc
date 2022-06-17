@@ -138,7 +138,7 @@ Intel {CPP} (oneAPI) for Linux
 * `icpx` in `PATH`
 * `icc` in `PATH`
 * `icpc` in `PATH`
-* `setvars.sh` in common install locations: `$HOME/intel/oneapi`,
+* `setvars.sh` in common install locations: `${HOME}/intel/oneapi`,
   `/opt/intel/oneapi`, `/opt/intel/inteloneapi`
 * `iccvars.sh` in common install locations: `/opt/intel/cc/9.0/bin`,
   `/opt/intel_cc_80/bin`

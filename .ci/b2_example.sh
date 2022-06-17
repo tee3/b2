@@ -4,7 +4,7 @@ set -e
 
 cdir=${PWD}
 cd $1
-$HOME/temp/.b2/bin/b2 -d+2 ${B2_ARGS}
+${HOME}/temp/.b2/bin/b2 -d+2 ${B2_ARGS}
 echo "-----"
 find . -perm -111 -type f -exec file "{}" "+"
 echo "-----"

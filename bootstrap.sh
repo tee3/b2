@@ -18,7 +18,7 @@ if ! "${pwd}/src/engine/build.sh" "$@" ; then
     echo "Failed to build the B2 engine." 1>&2
     exit 1
 fi
-cd "$pwd"
+cd "${pwd}"
 cp "./src/engine/b2" .
 
 cat << EOF
