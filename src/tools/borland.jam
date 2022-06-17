@@ -291,7 +291,7 @@ else if [ os.name ] = NT
 else
 {
     .set-path = "PATH=\"" ;
-    .old-path = "\":$PATH
+    .old-path = "\":${PATH}
       export PATH
       " ;
 }
