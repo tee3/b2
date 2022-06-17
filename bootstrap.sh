@@ -12,14 +12,14 @@ set -u
 
 # Build b2
 echo "Building the B2 engine.."
-pwd=$(pwd)
-if ! "${pwd}/src/engine/build.sh" "$@" ; then
+pwd="$(pwd)"
+if ! "${pwd}"/src/engine/build.sh "$@" ; then
     echo
     echo "Failed to build the B2 engine." 1>&2
     exit 1
 fi
 cd "${pwd}"
-cp "./src/engine/b2" .
+cp ./src/engine/b2 .
 
 cat << EOF
 

@@ -106,25 +106,25 @@ explicit website ;
 actions website-checkout
 {
     rm -rf "$(website-dir)"
-    git clone --verbose --branch gh-pages --depth 1 "https://${GH_TOKEN}github.com/bfgroup/b2.git" "$(website-dir)" || exit 1
-    CD=${PWD}
+    git clone --verbose --branch gh-pages --depth 1 https://"${GH_TOKEN}"github.com/bfgroup/b2.git "$(website-dir)" || exit 1
+    CD="${PWD}"
     cd "$(website-dir)"
     git rm --ignore-unmatch -r "$(website-doc-dir)" || exit 1
     mkdir -p "$(website-doc-dir)" || exit 1
-    cd ${CD}
+    cd "${CD}"
     echo "done" > "$(<)"
 }
 
 actions website-publish
 {
-    CD=${PWD}
+    CD="${PWD}"
     cd "$(website-dir)/$(website-doc-dir)"
     git config user.email "b2-bot"
     git config user.name "b2-bot"
     git add --verbose . || exit 1
     git commit -m "Update user manual."
     git push || exit 1
-    cd ${CD}
+    cd "${CD}"
     rm -rf "$(website-dir)"
     echo "done" > "$(<)"
 }
