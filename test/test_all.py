@@ -451,6 +451,7 @@ tests = [
     "project_sub_resolution",
     "project_test3",
     "project_test4",
+    "qemu",
     "property_expansion",
     # FIXME: Disabled due lack of qt5 detection
     #         "qt5",

@@ -573,6 +573,16 @@ using python
 ;
 ----
 
+=== Testing tools
+
+B2 support for running tests with other tools is documented below.
+
+:leveloffset: +3
+
+include::../../src/tools/qemu.jam[tag=doc]
+
+:leveloffset: -3
+
 === Documentation tools
 
 B2 support for the Boost documentation tools is documented

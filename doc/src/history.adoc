@@ -6,6 +6,10 @@
 * *New*: Add minimal https://ecostd.github.io/[EcoStd] support. Minimal being
   self introspection information output.
   -- _René Ferdinand Rivera Morell_
+* *New*: Add `qemu` tool module. With `using qemu ;` the tests of Linux targets
+  for other processors are run under the QEMU user mode emulator and CPU that
+  match the `architecture`, `address-model` and `instruction-set`.
+  -- _Tom Brown_
 * Fix obsolete `-ip` option for intel-linux toolset. Replaced with `-ipo`.
   -- _Amlal El Mahrouss_
 * Fix `clang-win` toolset initialization error, `missing argument native` from

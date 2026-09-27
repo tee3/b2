@@ -457,6 +457,9 @@ The command used to run the executable will be:
 ----
 valgrind bin/$toolset/debug/helpers_test
 ----
++
+The link:#b2.reference.tools.qemu[`qemu`] module sets a default launcher to
+run the tests of Linux targets for other processors under QEMU.
 
 `test-info`::
 

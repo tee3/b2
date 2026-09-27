@@ -1,0 +1,907 @@
+# Copyright 2026 Tom Brown
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE.txt or copy at
+# https://www.bfgroup.xyz/b2/LICENSE.txt)
+
+#| tag::doc[]
+
+[[b2.reference.tools.qemu]]
+= QEMU
+
+The `qemu` module runs the tests of `run`, `unit-test` and the other testing
+rules under https://www.qemu.org[QEMU] when the target is for a processor the
+host can not run natively:
+
+* the tests of Linux targets under QEMU user mode emulation, on Linux, or
+  through a command that runs QEMU in Linux, such as a container, on other
+  hosts,
+* and the tests of bare metal targets under QEMU system emulation, with
+  semihosting, on any host but Windows.
+
+It is enabled by configuring it:
+
+[source]
+----
+using qemu ;
+----
+
+With that, for example:
+
+[source,shell]
+----
+b2 toolset=gcc-riscv architecture=riscv address-model=64
+----
+
+runs the tests as `qemu-riscv64 -L /usr/riscv64-linux-gnu bin/.../test`. The
+emulator is chosen from `<architecture>` and `<address-model>`, and the QEMU
+CPU from `<instruction-set>`. A test with an explicit `<testing.launcher>` is
+run with that instead.
+
+The syntax is:
+
+[source]
+----
+using qemu : [version] : [command] : [options] ;
+----
+
+where:
+
+`version`::
+  The version of QEMU. If QEMU is found, it must be this version. If not
+  given, it is the version of the QEMU found, and there must be one.
+`command`::
+  The command that runs one of the QEMU programs, such as
+  `/opt/qemu/bin/qemu-aarch64`. The other QEMU programs are in the same
+  directory. Any words before the program are a command that the QEMU user
+  mode programs are run with, such as one that runs them in a container. If
+  not given, the QEMU programs are searched for in `PATH`.
+
+and the `options` are any of:
+
+`<qemu-emulator>ARCHITECTURE.ADDRESS-MODEL=PROGRAM`::
+  The QEMU program to use for an `architecture` and `address-model`, in place
+  of the default one, for example `<qemu-emulator>mips.32=qemu-mips` for a
+  big endian target.
+`<qemu-cpu>INSTRUCTION-SET=[CPU]`::
+  The QEMU `-cpu` to use for an `instruction-set`, for example
+  `<qemu-cpu>cortex-r5+vfpv3-d16=cortex-r5f`. Without a `CPU` no `-cpu` is
+  given, for machines that only have their own.
+`<qemu-sysroot>[ARCHITECTURE.ADDRESS-MODEL=]DIRECTORY`::
+  The target system root that QEMU loads the dynamic linker and shared
+  libraries from, passed as `-L`. Without an `ARCHITECTURE.ADDRESS-MODEL=` it
+  applies to all targets. If not given, and `QEMU_LD_PREFIX` is not set, the
+  Debian style `/usr/<triplet>` of the target is used when it exists.
+`<qemu-option>OPTION`::
+  An additional option for all QEMU runs, for example `<qemu-option>-B` and
+  `<qemu-option>0x100000`.
+`<qemu-machine>[KEY=]MACHINE`::
+  The QEMU machine, `-M`, to run bare metal tests on. The `KEY` is an
+  `instruction-set`, or an `ARCHITECTURE.ADDRESS-MODEL`, that the machine is
+  for, and without one it is for all bare metal targets. For example
+  `<qemu-machine>cortex-a9+vfpv3=realview-pbx-a9`. See below.
+`<qemu-system>ARCHITECTURE.ADDRESS-MODEL=PROGRAM`::
+  The QEMU system emulator to use for bare metal tests of an `architecture`
+  and `address-model`, in place of the default one, for example
+  `<qemu-system>mips.32=qemu-system-mips` for a big endian target.
+`<qemu-check>on|off`::
+  With `on`, runs each QEMU program that tests would be run with, and warns
+  if it is not found, is not the version of QEMU, or does not list the CPU of
+  an `instruction-set`. Normally the QEMU programs and CPUs are not checked,
+  but trusted to be right, and with `--debug-configuration` the CPUs each
+  program lists are printed.
+
+The QEMU `-cpu` for an `instruction-set` is the one given with
+`<qemu-cpu>`, else the QEMU name from a built in table of names that differ
+between B2 and QEMU, else the `instruction-set` value itself. QEMU is not run
+to check it, nor that the emulator is installed, so a test with a CPU the
+emulator does not have fails with QEMU's error. Each `architecture` is
+configured for the `instruction-set` values that B2 groups with it, and for
+any in no group. Tests for an `architecture` without an `address-model`, or
+for a target with no known emulator, fail saying so.
+
+B2 has no feature for the byte order of the target, so the targets are run
+with the little endian emulators, such as `qemu-mipsel` and `qemu-ppc64le`.
+Big endian targets need a `<qemu-emulator>`. The `instruction-set` values are
+the ones known when `using qemu` is called, so it must be called after any
+extension of the `instruction-set` feature.
+
+QEMU user mode emulation is only available on Linux hosts. On other hosts the
+tests of Linux targets can be run in Linux with a command, which B2 puts in
+front of the QEMU program and the test. For example, on macOS, with a
+container of the `container` tool that has QEMU installed, and the build
+directory mounted at the same path, as the tests are run in the directory B2
+is run in:
+
+[source,shell]
+----
+container run -d --name b2-qemu -v "$HOME:$HOME" debian:stable sleep infinity
+container exec b2-qemu sh -c \
+    "apt-get update && apt-get install -y qemu-user libc6-riscv64-cross"
+----
+
+and:
+
+[source]
+----
+using qemu : : container exec -w $PWD -e LD_LIBRARY_PATH=$DYLD_LIBRARY_PATH
+    b2-qemu qemu-riscv64 ;
+----
+
+The command passes on the library path that the test sets up. The tests of
+Linux targets for the host's own processor are run with the command too, but
+without QEMU. As the files QEMU sees can not be looked at, the Debian style
+`/usr/<triplet>` system root is always passed to QEMU, which ignores it if
+missing. On other hosts without such a command, `using qemu` warns, and the
+tests of Linux targets are not run under QEMU.
+
+The tests of bare metal targets, with `<target-os>elf` or `<target-os>none`,
+are run with the `qemu-system-<arch>` emulator. They are always run on the
+host, and with a command that has words before the QEMU program the
+`qemu-system-<arch>` programs are searched for in `PATH`. There is no telling
+which machine a bare metal target is for, so it must be given with
+`<qemu-machine>`. The test is loaded as the kernel of the machine, and run
+with semihosting, which passes it its arguments and its exit status, and
+prints its output. For example, for a test linked with newlib's
+`rdimon.specs`:
+
+[source]
+----
+using qemu : : : <qemu-machine>cortex-a9+vfpv3=realview-pbx-a9 ;
+----
+
+runs it as `qemu-system-arm -M realview-pbx-a9 -cpu cortex-a9 -display none
+-kernel test -semihosting-config enable=on,target=native,arg=test`, with
+`-audio none` too for QEMU 8.2 and later. Output written to a serial port,
+rather than with semihosting, needs a `<qemu-option>-serial` and
+`<qemu-option>stdio`. A bare metal test that does not exit with semihosting
+runs until it is stopped, which the `-l` option of B2 can limit.
+
+|# # end::doc[]
+
+import common ;
+import errors ;
+import feature ;
+import modules ;
+import numbers ;
+import os ;
+import path ;
+import regex ;
+import set ;
+import testing ;
+import toolset ;
+
+if --debug-configuration in [ modules.peek : ARGV ]
+{
+    .debug-configuration = true ;
+}
+
+# The QEMU program for each <architecture>.<address-model> target. B2 does not
+# know the byte order of the target, so these are the little endian ones where
+# there is a choice. There is no little endian 32 bit PowerPC one.
+.emulator.arm.64 = qemu-aarch64 ;
+.emulator.arm.32 = qemu-arm ;
+.emulator.riscv.64 = qemu-riscv64 ;
+.emulator.riscv.32 = qemu-riscv32 ;
+.emulator.loongarch.64 = qemu-loongarch64 ;
+.emulator.s390x.64 = qemu-s390x ;
+.emulator.sparc.64 = qemu-sparc64 ;
+.emulator.sparc.32 = qemu-sparc ;
+.emulator.parisc.32 = qemu-hppa ;
+.emulator.x86.64 = qemu-x86_64 ;
+.emulator.x86.32 = qemu-i386 ;
+.emulator.power.64 = qemu-ppc64le ;
+for local a in mips mips1 mips2 mips3 mips4 mips32 mips32r2 mips64
+{
+    .emulator.$(a).64 = qemu-mips64el ;
+    .emulator.$(a).32 = qemu-mipsel ;
+}
+
+# The QEMU system emulator for each <architecture>.<address-model> bare metal
+# target, little endian where there is a choice.
+.system.arm.64 = qemu-system-aarch64 ;
+.system.arm.32 = qemu-system-arm ;
+.system.riscv.64 = qemu-system-riscv64 ;
+.system.riscv.32 = qemu-system-riscv32 ;
+.system.loongarch.64 = qemu-system-loongarch64 ;
+.system.s390x.64 = qemu-system-s390x ;
+.system.sparc.64 = qemu-system-sparc64 ;
+.system.sparc.32 = qemu-system-sparc ;
+.system.parisc.32 = qemu-system-hppa ;
+.system.x86.64 = qemu-system-x86_64 ;
+.system.x86.32 = qemu-system-i386 ;
+.system.power.64 = qemu-system-ppc64 ;
+.system.power.32 = qemu-system-ppc ;
+for local a in mips mips1 mips2 mips3 mips4 mips32 mips32r2 mips64
+{
+    .system.$(a).64 = qemu-system-mips64el ;
+    .system.$(a).32 = qemu-system-mipsel ;
+}
+
+# The Debian style triplets of the /usr/<triplet> system root for each QEMU
+# program.
+.sysroot.qemu-aarch64 = aarch64-linux-gnu ;
+.sysroot.qemu-aarch64_be = aarch64_be-linux-gnu ;
+.sysroot.qemu-arm = arm-linux-gnueabihf arm-linux-gnueabi ;
+.sysroot.qemu-armeb = armeb-linux-gnueabihf armeb-linux-gnueabi ;
+.sysroot.qemu-riscv64 = riscv64-linux-gnu ;
+.sysroot.qemu-riscv32 = riscv32-linux-gnu ;
+.sysroot.qemu-loongarch64 = loongarch64-linux-gnu ;
+.sysroot.qemu-s390x = s390x-linux-gnu ;
+.sysroot.qemu-sparc64 = sparc64-linux-gnu ;
+.sysroot.qemu-hppa = hppa-linux-gnu ;
+.sysroot.qemu-x86_64 = x86_64-linux-gnu ;
+.sysroot.qemu-i386 = i686-linux-gnu ;
+.sysroot.qemu-mips = mips-linux-gnu ;
+.sysroot.qemu-mipsel = mipsel-linux-gnu ;
+.sysroot.qemu-mips64 = mips64-linux-gnuabi64 ;
+.sysroot.qemu-mips64el = mips64el-linux-gnuabi64 ;
+.sysroot.qemu-ppc = powerpc-linux-gnu ;
+.sysroot.qemu-ppc64 = powerpc64-linux-gnu ;
+.sysroot.qemu-ppc64le = powerpc64le-linux-gnu ;
+
+# The QEMU CPU for <instruction-set> values whose name differs from QEMU's.
+# Other values are passed to QEMU as they are.
+.cpu.native = max ;
+.cpu.cortex-a9+vfpv3 = cortex-a9 ;
+.cpu.cortex-r5+vfpv3-d16 = cortex-r5f ;
+.cpu.i486 = 486 ;
+.cpu.core2 = core2duo ;
+.cpu.conroe = Conroe ;
+.cpu.penryn = Penryn ;
+.cpu.nehalem = Nehalem ;
+.cpu.sandy-bridge = SandyBridge ;
+.cpu.ivy-bridge = IvyBridge ;
+.cpu.haswell = Haswell ;
+.cpu.broadwell = Broadwell ;
+.cpu.skylake = Skylake-Client ;
+.cpu.skylake-avx512 = Skylake-Server ;
+.cpu.cascadelake = Cascadelake-Server ;
+.cpu.cooperlake = Cooperlake ;
+.cpu.icelake-server = Icelake-Server ;
+.cpu.sapphirerapids = SapphireRapids ;
+.cpu.atom = n270 ;
+.cpu.znver1 = EPYC ;
+.cpu.znver2 = EPYC-Rome ;
+.cpu.znver3 = EPYC-Milan ;
+.cpu.4kc = 4Kc ;
+.cpu.4km = 4Km ;
+.cpu.4kec = 4KEc ;
+.cpu.4kem = 4KEm ;
+.cpu.5kc = 5Kc ;
+.cpu.5kf = 5Kf ;
+.cpu.20kc = 20Kc ;
+.cpu.24kc = 24Kc ;
+.cpu.24kec = 24KEc ;
+.cpu.24kf2_1 = 24Kf ;
+.cpu.24kf1_1 = 24Kf ;
+.cpu.34kf2_1 = 34Kf ;
+.cpu.34kf1_1 = 34Kf ;
+.cpu.74kf2_1 = 74Kf ;
+.cpu.74kf1_1 = 74Kf ;
+.cpu.74kf3_2 = 74Kf ;
+.cpu.m14k = M14K ;
+.cpu.m14kc = M14Kc ;
+.cpu.p5600 = P5600 ;
+.cpu.i6400 = I6400 ;
+.cpu.i6500 = I6500 ;
+.cpu.r4000 = R4000 ;
+.cpu.loongson2e = Loongson-2E ;
+.cpu.loongson2f = Loongson-2F ;
+.cpu.loongson3a = Loongson-3A1000 ;
+
+# The <instruction-set> values for each <architecture>, as B2 groups them in
+# the instruction-set feature. An architecture is configured for its values,
+# and for any in no group, such as ones added later.
+.instruction-sets.x86 =
+    native i486 i586 i686 pentium pentium-mmx pentiumpro pentium2 pentium3
+    pentium3m pentium-m pentium4 pentium4m prescott nocona core2 corei7
+    corei7-avx core-avx-i conroe conroe-xe conroe-l allendale merom merom-xe
+    kentsfield kentsfield-xe penryn wolfdale yorksfield nehalem sandy-bridge
+    ivy-bridge haswell broadwell skylake skylake-avx512 cannonlake
+    icelake-client icelake-server cascadelake cooperlake tigerlake rocketlake
+    alderlake sapphirerapids atom k6 k6-2 k6-3 athlon athlon-tbird athlon-4
+    athlon-xp athlon-mp k8 opteron athlon64 athlon-fx k8-sse3 opteron-sse3
+    athlon64-sse3 amdfam10 barcelona bdver1 bdver2 bdver3 bdver4 btver1 btver2
+    znver1 znver2 znver3 winchip-c6 winchip2 c3 c3-2 c7 ;
+.instruction-sets.ia64 = itanium itanium1 merced itanium2 mckinley ;
+.instruction-sets.sparc =
+    v7 cypress v8 supersparc sparclite hypersparc sparclite86x f930 f934
+    sparclet tsc701 v9 ultrasparc ultrasparc3 ;
+.instruction-sets.power =
+    401 403 405 405fp 440 440fp 505 601 602 603 603e 604 604e 620 630 740 7400
+    7450 750 801 821 823 860 970 8540 power-common ec603e g3 g4 g5 power power2
+    power3 power4 power5 powerpc powerpc64 rios rios1 rsc rios2 rs64a ;
+.instruction-sets.mips =
+    4kc 4km 4kp 4ksc 4kec 4kem 4kep 4ksd 5kc 5kf 20kc 24kc 24kf2_1 24kf1_1
+    24kec 24kef2_1 24kef1_1 34kc 34kf2_1 34kf1_1 34kn 74kc 74kf2_1 74kf1_1
+    74kf3_2 1004kc 1004kf2_1 1004kf1_1 i6400 i6500 interaptiv loongson2e
+    loongson2f loongson3a gs464 gs464e gs264e m4k m14k m14kc m14ke m14kec m5100
+    m5101 octeon octeon+ octeon2 octeon3 orion p5600 p6600 r2000 r3000 r3900
+    r4000 r4400 r4600 r4650 r4700 r5900 r6000 r8000 rm7000 rm9000 r10000 r12000
+    r14000 r16000 sb1 sr71000 vr4100 vr4111 vr4120 vr4130 vr4300 vr5000 vr5400
+    vr5500 xlr xlp ;
+.instruction-sets.parisc = 700 7100 7100lc 7200 7300 8000 ;
+.instruction-sets.arm =
+    armv2 armv2a armv3 armv3m armv4 armv4t armv5 armv5t armv5te armv6 armv6j
+    iwmmxt ep9312 armv7 armv7s cortex-a9+vfpv3 cortex-a53 cortex-r5
+    cortex-r5+vfpv3-d16 ;
+.instruction-sets.s390x = z196 zEC12 z13 z14 z15 ;
+.instruction-set-groups = x86 ia64 sparc power mips parisc arm s390x ;
+
+# The <architecture>.<address-model> targets that each host platform, as
+# given by os.platform, runs natively. An empty address-model is the host's.
+.native.X86 = x86.32 x86. ;
+.native.X86_64 = x86.64 x86.32 x86. ;
+.native.ARM = arm.32 arm. ;
+.native.ARM64 = arm.64 arm. ;
+.native.RISCV32 = riscv.32 riscv. ;
+.native.RISCV64 = riscv.64 riscv. ;
+.native.390 = s390x.64 s390x. ;
+.native.PARISC = parisc.32 parisc. ;
+.native.SPARC = sparc.32 sparc.64 sparc. ;
+.native.MIPS32 = mips.32 mips. ;
+.native.MIPS64 = mips.64 mips. ;
+.native.PPC = power.32 power.64 power. ;
+.native.IA64 = ia64.64 ia64. ;
+
+
+# Configures running the tests of targets for other processors under QEMU.
+#
+rule init ( version ? : command * : options * )
+{
+    local arguments = $(version) ":" $(command) ":" $(options) ;
+    arguments = $(arguments:J=" ") ;
+    if $(.initialized)
+    {
+        if $(arguments) != $(.arguments)
+        {
+            ECHO "warning: qemu: already configured, ignoring using qemu :"
+                "$(version:E=) : $(command:J= ) : $(options:J= ) ;" ;
+        }
+        return ;
+    }
+    .initialized = true ;
+    .arguments = $(arguments) ;
+
+    parse-options $(options) ;
+
+    # The command is an optional command to run QEMU with, followed by one of
+    # the QEMU programs, whose directory has the others.
+    if $(command)
+    {
+        .wrapper = $(command[1--2]) ;
+        .command-program = $(command[-1]:D=) ;
+        .directory = $(command[-1]:D) ;
+    }
+
+    # The version must be known, and is that of the QEMU found.
+    local found = [ find-version ] ;
+    if $(version) && $(found) && ! [ version-matches $(version) : $(found) ]
+    {
+        errors.user-error "qemu: version $(version) was given, but QEMU"
+            "version $(found) was found." ;
+    }
+    .version = $(found) $(version) ;
+    .version = $(.version[1]) ;
+    if ! $(.version)
+    {
+        errors.user-error "qemu: no QEMU was found to get its version from,"
+            "give the version, or the command of QEMU, in using qemu." ;
+    }
+    .system-version = [ find-version system ] $(.version) ;
+    .system-version = $(.system-version[1]) ;
+    if $(.debug-configuration)
+    {
+        ECHO "notice: [qemu] version $(.version), system emulation version"
+            "$(.system-version)" ;
+    }
+
+    # Without an audio backend, which QEMU 8.2 has, machines with audio
+    # devices print warnings about the host's audio.
+    if ! [ version-less $(.system-version) : 8.2 ]
+    {
+        .system-options = -audio none ;
+    }
+
+    # Bare metal targets run under system emulation, which needs a shell to
+    # pass the test and its arguments to QEMU.
+    if [ os.name ] != NT
+    {
+        configure-bare-metal ;
+    }
+
+    if [ os.name ] != LINUX && ! $(.wrapper)
+    {
+        ECHO "warning: qemu: user mode emulation is only available on Linux"
+            "hosts, tests of Linux targets will not be run under QEMU. Give a"
+            "command that runs QEMU in Linux in using qemu." ;
+        return ;
+    }
+
+    local native = $(.native.$(.host-platform)) ;
+    local address-models = [ feature.values <address-model> ] ;
+    for local a in [ feature.values <architecture> ]
+    {
+        for local m in "" $(address-models)
+        {
+            if ! $(a).$(m) in $(native)
+            {
+                configure-target $(a) : $(m) ;
+            }
+            else if $(.wrapper)
+            {
+                # Native targets still need the command.
+                local condition = <target-os>linux/<architecture>$(a)
+                    /<address-model>$(m)/<testing.launcher> ;
+                toolset.flags testing LAUNCHER $(condition:J=)
+                    : "$(.wrapper:J= )" : unchecked ;
+            }
+        }
+    }
+    if $(.wrapper)
+    {
+        toolset.flags testing LAUNCHER
+            <target-os>linux/<architecture>/<testing.launcher>
+            : "$(.wrapper:J= )" : unchecked ;
+    }
+}
+.host-platform = [ os.platform ] ;
+
+
+# Checks and sets the options.
+#
+local rule parse-options ( options * )
+{
+    for local o in $(options)
+    {
+        local value = $(o:G=) ;
+        local m = [ MATCH "^([^=]+)=(.*)$" : $(value) ] ;
+        switch $(o:G)
+        {
+            case <qemu-emulator> :
+                require $(o) : $(m[2]) ;
+                .emulator.$(m[1]) = $(m[2]) ;
+            case <qemu-system> :
+                require $(o) : $(m[2]) ;
+                .system.$(m[1]) = $(m[2]) ;
+            case <qemu-cpu> :
+                require $(o) : $(m[1]) ;
+                if $(m[2]) { .user-cpu.$(m[1]) = $(m[2]) ; }
+                else { .no-cpu.$(m[1]) = true ; }
+            case <qemu-sysroot> :
+                m = [ MATCH "^([^=/]+)=(.+)$" : $(value) ] ;
+                if $(m) { .user-sysroot.$(m[1]) = $(m[2]) ; }
+                else { .user-sysroot = $(value) ; }
+            case <qemu-machine> :
+                m = [ MATCH "^([^=,]+)=(.+)$" : $(value) ] ;
+                if $(m) { .machine.$(m[1]) = $(m[2]) ; }
+                else { .machine = $(value) ; }
+                .machines = true ;
+            case <qemu-option> :
+                .qemu-options += $(value) ;
+            case <qemu-check> :
+                require $(o) : [ MATCH "^(on|off)$" : $(value) ] ;
+                if $(value) = "on" { .check = true ; }
+            case * :
+                errors.user-error "qemu: unknown option $(o) in using qemu." ;
+        }
+    }
+}
+
+
+# Errors about the option unless it has the required value.
+#
+local rule require ( option : value * )
+{
+    if ! $(value)
+    {
+        errors.user-error "qemu: invalid option $(option) in using qemu." ;
+    }
+}
+
+
+# Returns the <instruction-set> values to configure for the <architecture>.
+#
+local rule instruction-sets ( architecture )
+{
+    if ! $(.ungrouped-instruction-sets)
+    {
+        local all = [ feature.values <instruction-set> ] ;
+        local grouped ;
+        for local g in $(.instruction-set-groups)
+        {
+            .grouped-instruction-sets.$(g) =
+                [ set.intersection $(.instruction-sets.$(g)) : $(all) ] ;
+            grouped += $(.grouped-instruction-sets.$(g)) ;
+        }
+        .ungrouped-instruction-sets = [ set.difference $(all) : $(grouped) ]
+            "" ;
+    }
+    local group = [ MATCH "^(mips)" : $(architecture) ] $(architecture) ;
+    return $(.grouped-instruction-sets.$(group[1]))
+        $(.ungrouped-instruction-sets[1--2]) ;
+}
+
+
+# Returns the version of QEMU, from the program of the command if given, else
+# from the first user mode or system emulator found. With `system`, it is that
+# of the first system emulator found on the host.
+#
+local rule find-version ( system ? )
+{
+    local output ;
+    if $(.wrapper) && ! $(system)
+    {
+        local command = $(.wrapper) \"$(.command-program)\" --version ;
+        output = [ SHELL "$(command:J= )" ] ;
+    }
+    else
+    {
+        local names = $(.command-program) ;
+        if ! $(system) { names += [ programs .emulator ] ; }
+        names += [ programs .system ] ;
+        for local name in $(names)
+        {
+            if ! $(output)
+            {
+                local found ;
+                if $(.directory) && ! $(.wrapper)
+                {
+                    found = [ path.glob [ path.make $(.directory) ] : $(name)
+                        $(name).exe ] ;
+                    if $(found) { found = [ path.native $(found[1]) ] ; }
+                }
+                else
+                {
+                    found = [ common.find-tool $(name) ] ;
+                }
+                if $(found)
+                {
+                    output = [ SHELL "\"$(found)\" --version" ] ;
+                }
+            }
+        }
+    }
+    return [ MATCH "version ([0-9]+[.][0-9.]*[0-9])" : $(output) ] ;
+}
+
+
+# Returns the QEMU programs of the table, .emulator or .system, once each.
+#
+local rule programs ( table )
+{
+    local result ;
+    for local a in [ feature.values <architecture> ]
+    {
+        for local m in [ feature.values <address-model> ]
+        {
+            if ! $($(table).$(a).$(m)) in $(result)
+            {
+                result += $($(table).$(a).$(m)) ;
+            }
+        }
+    }
+    return $(result) ;
+}
+
+
+# Returns true if the given version, such as 10 or 10.0, is the found version,
+# such as 10.0.13.
+#
+local rule version-matches ( given : found )
+{
+    local g = [ regex.split $(given) "[.]" ] ;
+    local f = [ regex.split $(found) "[.]" ] ;
+    while $(g) && $(g[1]) = $(f[1])
+    {
+        g = $(g[2-]) ;
+        f = $(f[2-]) ;
+    }
+    if ! $(g) { return true ; }
+}
+
+
+# Returns true if the version is less than the other one.
+#
+local rule version-less ( version : other )
+{
+    local v = [ regex.split $(version) "[.]" ] ;
+    local o = [ regex.split $(other) "[.]" ] ;
+    while $(v) && $(o) && $(v[1]) = $(o[1])
+    {
+        v = $(v[2-]) ;
+        o = $(o[2-]) ;
+    }
+    if $(o) && ( ! $(v) || [ numbers.less $(v[1]) $(o[1]) ] )
+    {
+        return true ;
+    }
+}
+
+
+# Returns the QEMU program, quoted, in the directory of the command if given.
+# With `host`, the program is run on the host, where the directory is only
+# known if the command has no words before the QEMU program.
+#
+local rule program ( name : host ? )
+{
+    if $(.directory) && ! ( $(host) && $(.wrapper) )
+    {
+        name = [ path.native [ path.join [ path.make $(.directory) ]
+            $(name) ] ] ;
+    }
+    return \"$(name)\" ;
+}
+
+
+# With --debug-configuration or <qemu-check>on, looks at the QEMU program and
+# prints its CPUs, and with <qemu-check>on warns about its version and about
+# CPUs it does not list.
+#
+local rule inspect ( command + : emulator : version : cpus * )
+{
+    if ! $(.debug-configuration) && ! $(.check)
+    {
+        return ;
+    }
+    if ! $(.inspected.$(emulator))
+    {
+        .inspected.$(emulator) = true ;
+        local found = [ MATCH "version ([0-9]+[.][0-9.]*[0-9])"
+            : [ SHELL "$(command:J= ) --version 2>&1" ] ] ;
+        if ! $(found)
+        {
+            ECHO "warning: qemu: $(emulator) was not found." ;
+            .missing.$(emulator) = true ;
+            return ;
+        }
+        if $(.check) && $(found) != $(version)
+        {
+            ECHO "warning: qemu: $(emulator) is version $(found), not"
+                "$(version)." ;
+        }
+        local listed ;
+        for local line in [ SPLIT_BY_CHARACTERS
+            [ SHELL "$(command:J= ) -cpu help 2>&1" ] : "\n" ]
+        {
+            if [ MATCH "(:)[ \t]*$" : $(line) ]
+            {
+                if $(listed) { break ; }
+            }
+            else
+            {
+                # QEMU 6 prefixes the CPUs with the architecture.
+                line = [ MATCH "^[ \t]*(.*)" : $(line) ] ;
+                line = [ MATCH "^(x86|s390|PowerPC|MIPS)[ \t]+(.*)" : $(line) ]
+                    $(line) ;
+                if $(line[3]) { line = $(line[2]) ; }
+                listed += [ MATCH "^'?([^ \t']+)" : $(line[1]) ] ;
+            }
+        }
+        .listed-cpus.$(emulator) = $(listed) ;
+        ECHO "notice: [qemu] $(emulator) $(found) CPUs:" $(listed) ;
+    }
+    if $(.check) && ! $(.missing.$(emulator))
+    {
+        for local c in $(cpus)
+        {
+            if ! $(c) in $(.listed-cpus.$(emulator))
+                && ! $(.warned.$(emulator).$(c))
+            {
+                .warned.$(emulator).$(c) = true ;
+                ECHO "warning: qemu: $(emulator) does not list the CPU $(c)." ;
+            }
+        }
+    }
+}
+
+
+# Returns the QEMU -cpu option for the <instruction-set> value, if any.
+#
+local rule cpu-option ( instruction-set ? )
+{
+    if $(instruction-set) && ! $(.no-cpu.$(instruction-set))
+    {
+        local cpu = $(.user-cpu.$(instruction-set)) $(.cpu.$(instruction-set))
+            $(instruction-set) ;
+        return -cpu $(cpu[1]) ;
+    }
+}
+
+
+# Sets the launcher of the tests for one <architecture> and <address-model>.
+#
+local rule configure-target ( architecture : address-model ? )
+{
+    local target = $(architecture).$(address-model) ;
+    local condition = <target-os>linux/<architecture>$(architecture)
+        /<address-model>$(address-model)/<testing.launcher> ;
+    condition = $(condition:J=) ;
+    local emulator = $(.emulator.$(target)) ;
+
+    if ! $(address-model)
+    {
+        if $(.emulator.$(architecture).64) || $(.emulator.$(architecture).32)
+        {
+            fail $(condition) : "architecture=$(architecture) needs an"
+                "address-model to choose the QEMU emulator." ;
+        }
+        else
+        {
+            fail $(condition) : "no QEMU emulator is known for"
+                "architecture=$(architecture)." ;
+        }
+        return ;
+    }
+    if ! $(emulator)
+    {
+        fail $(condition) : "no QEMU emulator is known for"
+            "architecture=$(architecture) address-model=$(address-model),"
+            "give it with <qemu-emulator>$(target)=qemu-... in using qemu." ;
+        return ;
+    }
+
+    local program = $(.wrapper) [ program $(emulator) ] ;
+    local command = $(program) [ sysroot-option $(target) : $(emulator) ]
+        $(.qemu-options) ;
+    if $(.debug-configuration)
+    {
+        ECHO "notice: [qemu] architecture=$(architecture)"
+            "address-model=$(address-model): $(command:J= )" ;
+    }
+
+    # One condition for each <instruction-set> value, and one for none, so that
+    # exactly one matches any test.
+    local cpus ;
+    for local i in "" [ instruction-sets $(architecture) ]
+    {
+        local cpu = [ cpu-option $(i) ] ;
+        cpus += $(cpu[2]) ;
+        local launcher = $(command) $(cpu) ;
+        toolset.flags testing LAUNCHER $(condition)/<instruction-set>$(i)
+            : "$(launcher:J= )" : unchecked ;
+    }
+    inspect $(program) : $(emulator) : $(.version) : $(cpus) ;
+}
+
+
+# Sets the launchers of the tests for bare metal targets.
+#
+local rule configure-bare-metal ( )
+{
+    for local os in elf none
+    {
+        if ! $(.machines)
+        {
+            fail <target-os>$(os)/<testing.launcher> : "bare metal tests"
+                "need a machine to run on, give it with <qemu-machine>..."
+                "in using qemu." ;
+        }
+        else
+        {
+            fail <target-os>$(os)/<architecture>/<testing.launcher> :
+                "bare metal tests need an architecture and address-model to"
+                "choose the QEMU emulator." ;
+            local address-models = [ feature.values <address-model> ] ;
+            for local a in [ feature.values <architecture> ]
+            {
+                for local m in "" $(address-models)
+                {
+                    configure-bare-metal-target $(os) : $(a) : $(m) ;
+                }
+            }
+        }
+    }
+}
+
+
+# The shell commands that pass the test, $1, as the kernel, and it and its
+# arguments, the rest, with semihosting, doubling any commas in them as QEMU
+# needs.
+.semihosting = "k=$1; e=`printf %s \"$1\" | sed s/,/,,/g`; shift;"
+    "for x in \"$@\"; do"
+    "e=\"$e,arg=`printf %s \"$x\" | sed s/,/,,/g`\"; done;" ;
+.semihosting-options = "-kernel \"$k\""
+    "-semihosting-config \"enable=on,target=native,arg=$e\"" ;
+
+
+# Sets the launcher of the tests for one bare metal <target-os>,
+# <architecture> and <address-model>. The test is loaded as the kernel of the
+# machine, and given its arguments, and run with semihosting.
+#
+local rule configure-bare-metal-target ( os : architecture : address-model ? )
+{
+    local target = $(architecture).$(address-model) ;
+    local condition = <target-os>$(os)/<architecture>$(architecture)
+        /<address-model>$(address-model)/<testing.launcher> ;
+    condition = $(condition:J=) ;
+    local emulator = $(.system.$(target)) ;
+
+    if ! $(address-model)
+    {
+        fail $(condition) : "bare metal tests need an address-model to choose"
+            "the QEMU emulator." ;
+        return ;
+    }
+    if ! $(emulator)
+    {
+        fail $(condition) : "no QEMU system emulator is known for"
+            "architecture=$(architecture) address-model=$(address-model),"
+            "give it with <qemu-system>$(target)=qemu-system-... in using"
+            "qemu." ;
+        return ;
+    }
+
+    local program = [ program $(emulator) : host ] ;
+    local cpus ;
+    for local i in "" [ instruction-sets $(architecture) ]
+    {
+        local machine = $(.machine.$(i)) $(.machine.$(target)) $(.machine) ;
+        if ! $(machine)
+        {
+            fail $(condition)/<instruction-set>$(i) : "no machine to run"
+                "architecture=$(architecture) address-model=$(address-model)"
+                "instruction-set=$(i) on, give it with <qemu-machine>... in"
+                "using qemu." ;
+        }
+        else
+        {
+            local cpu = [ cpu-option $(i) ] ;
+            cpus += $(cpu[2]) ;
+            local qemu = exec $(program) -M $(machine[1]) $(cpu) -display none
+                $(.system-options) $(.qemu-options) $(.semihosting-options) ;
+            toolset.flags testing LAUNCHER $(condition)/<instruction-set>$(i)
+                : "sh -c '$(.semihosting:J= ) $(qemu:J= )' qemu"
+                : unchecked ;
+        }
+    }
+    inspect $(program) : $(emulator) : $(.system-version) : $(cpus) ;
+}
+
+
+# Makes the tests matching the condition fail with the message.
+#
+local rule fail ( condition : message + )
+{
+    if [ os.name ] = NT
+    {
+        # The command shell needs < and > escaped.
+        local escaped = [ regex.replace "$(message:J= )" "([<>])" "^\\1" ] ;
+        toolset.flags testing LAUNCHER $(condition)
+            : "cmd /c \"echo error: qemu: $(escaped) 1>&2 && exit /b 1\" &&"
+            : unchecked ;
+    }
+    else
+    {
+        toolset.flags testing LAUNCHER $(condition)
+            : "sh -c \"echo 'error: qemu: $(message:J= )' >&2 ; exit 1\" qemu"
+            : unchecked ;
+    }
+}
+
+
+# Returns the -L system root option for the target and QEMU program.
+#
+local rule sysroot-option ( target : emulator )
+{
+    local sysroot = $(.user-sysroot.$(target)) $(.user-sysroot) ;
+    if ! $(sysroot) && $(.wrapper)
+    {
+        # Can not look where QEMU runs, and QEMU ignores a missing one.
+        sysroot = /usr/$(.sysroot.$(emulator)[1]) ;
+    }
+    if ! $(sysroot) && ! [ os.environ QEMU_LD_PREFIX ]
+    {
+        for local t in $(.sysroot.$(emulator))
+        {
+            if ! $(sysroot) && [ path.exists /usr/$(t) ]
+            {
+                sysroot = /usr/$(t) ;
+            }
+        }
+    }
+    if $(sysroot)
+    {
+        return -L \"$(sysroot[1])\" ;
+    }
+}
