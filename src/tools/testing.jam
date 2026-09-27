@@ -510,6 +510,62 @@ rule run-path-setup ( target : source : properties * )
 }
 
 
+# QEMU user mode emulator, and Debian style cross sysroot triplet, for each
+# <architecture>/<address-model> target combination.
+.qemu.arm.64 = aarch64 ;         .qemu-sysroot.arm.64 = aarch64-linux-gnu ;
+.qemu.arm.32 = arm ;             .qemu-sysroot.arm.32 = arm-linux-gnueabihf ;
+.qemu.riscv.64 = riscv64 ;       .qemu-sysroot.riscv.64 = riscv64-linux-gnu ;
+.qemu.riscv.32 = riscv32 ;
+.qemu.s390x.64 = s390x ;         .qemu-sysroot.s390x.64 = s390x-linux-gnu ;
+.qemu.loongarch.64 = loongarch64 ;
+.qemu-sysroot.loongarch.64 = loongarch64-linux-gnu ;
+.qemu.x86.64 = x86_64 ;          .qemu-sysroot.x86.64 = x86_64-linux-gnu ;
+.qemu.x86.32 = i386 ;            .qemu-sysroot.x86.32 = i686-linux-gnu ;
+
+# Target combinations that the host platform runs natively.
+.qemu-host = [ os.platform ] ;
+.qemu-native.X86 = x86.32 ;
+.qemu-native.X86_64 = x86.64 x86.32 ;
+.qemu-native.ARM = arm.32 ;
+.qemu-native.ARM64 = arm.64 ;
+.qemu-native.RISCV32 = riscv.32 ;
+.qemu-native.RISCV64 = riscv.64 ;
+.qemu-native.390 = s390x.64 ;
+
+# Returns the QEMU user mode command to run a test executable with, when
+# testing a Linux target of a foreign <architecture> on a Linux host, and the
+# matching qemu-<arch> emulator is available. Otherwise returns nothing.
+#
+local rule qemu-launcher ( properties * )
+{
+    if [ os.name ] != LINUX
+        || [ feature.get-values <target-os> : $(properties) ] != linux
+    {
+        return ;
+    }
+    local arch = [ feature.get-values <architecture> : $(properties) ] ;
+    local am = [ feature.get-values <address-model> : $(properties) ] ;
+    local target = $(arch).$(am) ;
+    if ! $(.qemu.$(target)) || $(target) in $(.qemu-native.$(.qemu-host))
+    {
+        return ;
+    }
+    if ! $(.qemu-checked.$(target))
+    {
+        .qemu-checked.$(target) = true ;
+        local command = [ common.find-tool qemu-$(.qemu.$(target)) ] ;
+        local sysroot = /usr/$(.qemu-sysroot.$(target)) ;
+        if $(command) && ! [ os.environ QEMU_LD_PREFIX ]
+            && $(.qemu-sysroot.$(target)) && [ path.exists $(sysroot) ]
+        {
+            command += -L $(sysroot) ;
+        }
+        .qemu-command.$(target) = $(command:J=" ") ;
+    }
+    return $(.qemu-command.$(target)) ;
+}
+
+
 local argv = [ modules.peek : ARGV ] ;
 
 toolset.flags testing.capture-output ARGS <testing.arg> ;
@@ -555,6 +611,9 @@ rule capture-output ( target : source : properties * )
     {
         ## On VMS set default launcher to MCR
         if [ os.name ] = VMS { LAUNCHER on $(target) = MCR ; }
+        ## Run foreign Linux targets under QEMU user mode emulation
+        local qemu = [ qemu-launcher $(properties) ] ;
+        if $(qemu) { LAUNCHER on $(target) = $(qemu) ; }
     }
 }
 
@@ -744,6 +803,9 @@ rule unit-test ( target : source : properties * )
     {
         ## On VMS set default launcher to MCR
         if [ os.name ] = VMS { LAUNCHER on $(target) = MCR ; }
+        ## Run foreign Linux targets under QEMU user mode emulation
+        local qemu = [ qemu-launcher $(properties) ] ;
+        if $(qemu) { LAUNCHER on $(target) = $(qemu) ; }
     }
 }
 

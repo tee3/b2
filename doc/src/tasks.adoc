@@ -457,6 +457,23 @@ The command used to run the executable will be:
 ----
 valgrind bin/$toolset/debug/helpers_test
 ----
++
+When no launcher is given, and a test for a `<target-os>linux` target is run
+on a Linux host, B2 runs the executable under QEMU user mode emulation if the
+target `<architecture>` and `<address-model>` differ from the host, and the
+matching `qemu-<arch>` emulator is found in `PATH`. For example:
++
+[source,shell]
+----
+b2 toolset=gcc-riscv architecture=riscv address-model=64
+----
++
+will run tests as `qemu-riscv64 bin/.../helpers_test`. If the Debian style
+cross sysroot, `/usr/riscv64-linux-gnu` here, exists and `QEMU_LD_PREFIX` is
+not set, it is passed to QEMU with `-L`. The supported targets are `arm`,
+`riscv` and `x86` with `address-model` `32` or `64`, and `s390x` and
+`loongarch` with `address-model` `64`.
+An explicit `testing.launcher` always takes precedence.
 
 `test-info`::
 

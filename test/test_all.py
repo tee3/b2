@@ -476,6 +476,7 @@ tests = [
     "test1",
     "test2",
     "testing",
+    "testing_qemu_launcher",
     "timedata",
     "toolset_clang_darwin",
     "toolset_clang_linux",
